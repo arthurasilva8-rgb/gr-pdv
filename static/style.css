@@ -1,0 +1,300 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #e2e8f0;
+    color: #1e293b;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Cabeçalho estilo GR Pdv */
+header {
+    background-color: #0f172a;
+    color: #ffffff;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.logo span {
+    color: #38bdf8;
+}
+
+.atalhos {
+    background-color: #f8fafc;
+    color: #1e293b;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+}
+
+.atalhos-titulo {
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #0f172a;
+}
+
+.atalhos table td {
+    padding: 2px 8px 2px 0;
+}
+
+.tecla {
+    display: inline-block;
+    background: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+/* Navegação entre telas */
+.nav-bar {
+    background-color: #1e293b;
+    padding: 0 24px 10px 24px;
+    display: flex;
+    gap: 10px;
+}
+
+.nav-bar button {
+    background-color: #475569;
+    color: #ffffff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.nav-bar button.active {
+    background-color: #2563eb;
+}
+
+.nav-bar button:hover:not(.active) {
+    background-color: #64748b;
+}
+
+/* Banner Principal de Destaque */
+.banner-wrapper {
+    padding: 14px 24px 0 24px;
+}
+
+.banner-label {
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.banner-desc {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0f172a;
+    text-transform: uppercase;
+}
+
+/* Container Principal */
+.main-container {
+    display: flex;
+    gap: 18px;
+    padding: 16px 24px;
+    flex: 1;
+}
+
+.panel {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+}
+
+/* Tabelas */
+.tabela-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 360px;
+}
+
+.tabela-dados {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.tabela-dados th {
+    background-color: #f1f5f9;
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 2px solid #cbd5e1;
+    color: #334155;
+}
+
+.tabela-dados td {
+    padding: 9px 8px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.low-stock {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+/* Formulários e Inputs */
+.campo-grupo {
+    margin-bottom: 12px;
+}
+
+.campo-grupo label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #334155;
+}
+
+.campo-grupo input,
+.campo-grupo select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #94a3b8;
+    border-radius: 6px;
+    font-size: 1rem;
+    background-color: #f8fafc;
+}
+
+.campo-grupo input:focus {
+    outline: none;
+    border-color: #2563eb;
+    background-color: #ffffff;
+}
+
+.subtotal-box {
+    background-color: #f1f5f9;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.subtotal-box span {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.total-banner {
+    background-color: #0284c7;
+    color: #ffffff;
+    padding: 14px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+/* Botões */
+.btn-primario {
+    background-color: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 11px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.btn-primario:hover {
+    background-color: #1d4ed8;
+}
+
+.btn-sucesso {
+    background-color: #16a34a;
+    color: #ffffff;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+}
+
+.btn-sucesso:hover {
+    background-color: #15803d;
+}
+
+.btn-mini {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: #ffffff;
+}
+
+.btn-repor {
+    background-color: #0284c7;
+}
+
+.btn-excluir {
+    background-color: #dc2626;
+}
+
+/* Resumo Estoque */
+.resumo-estoque {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* Barra de Status Inferior */
+.status-bar {
+    background-color: #cbd5e1;
+    color: #1e293b;
+    padding: 6px 24px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+}

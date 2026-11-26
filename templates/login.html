@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>GR Pdv - Login do Operador</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background-color: #0f172a;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-card {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 400px;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        .login-logo {
+            text-align: center;
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+        .login-logo span {
+            color: #0284c7;
+        }
+        .login-subtitulo {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+        .erro-alerta {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .dica-acesso {
+            margin-top: 20px;
+            background-color: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #334155;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-logo">GR <span>Pdv</span></div>
+        <div class="login-subtitulo">Identifique-se para abrir o sistema</div>
+
+        {% if erro %}
+            <div class="erro-alerta">{{ erro }}</div>
+        {% endif %}
+
+        <form method="POST" action="/login">
+            <div class="campo-grupo">
+                <label for="usuario">Usuário:</label>
+                <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário" required autofocus>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="senha">Senha:</label>
+                <input type="password" id="senha" name="senha" placeholder="Digite sua senha" required>
+            </div>
+
+            <button type="submit" class="btn-primario" style="margin-top: 8px; padding: 13px;">Entrar no Sistema</button>
+        </form>
+
+        <div class="dica-acesso">
+            <strong>Contas de Teste (Senha: 1234):</strong><br>
+            • <strong>caixa</strong> — Funcionário (Apenas Caixa)<br>
+            • <strong>fiscal</strong> — Fiscal (Caixa + Estoque)<br>
+            • <strong>gerente</strong> — Gerente (Caixa + Estoque)
+        </div>
+    </div>
+</body>
+</html>

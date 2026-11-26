@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>GR Pdv - Controle de Estoque</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="logo">GR <span>Pdv</span></div>
+        <div class="atalhos">
+            <div class="atalhos-titulo">Painel Administrativo</div>
+            <table>
+                <tr>
+                    <td><span class="tecla">F7</span> Voltar ao Caixa</td>
+                    <td><span class="tecla">RN03</span> Alerta automático para estoque abaixo de 10 un.</td>
+                </tr>
+            </table>
+        </div>
+    </header>
+
+    <div class="nav-bar">
+        <button onclick="location.href='/'">Frente de Caixa</button>
+        <button class="active">Controle de Estoque</button>
+        {% if cargo == 'gerente' %}
+            <button onclick="location.href='/gerencia'">Relatórios & Equipe</button>
+        {% endif %}
+        <button onclick="location.href='/logout'" style="margin-left: auto; background-color: #dc2626;">Sair / Trocar Operador</button>
+    </div>
+
+    <div class="banner-wrapper">
+        <div class="banner-label">Painel de Controle de Estoque</div>
+        <div class="banner-desc">GESTÃO DE PRODUTOS</div>
+    </div>
+
+    <div class="main-container">
+        <div class="panel" style="flex: 2;">
+            <h3>Lista de Produtos Cadastrados</h3>
+            <div class="tabela-wrapper">
+                <table class="tabela-dados">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Categoria</th>
+                            <th>Estoque Atual</th>
+                            <th>Preço Custo</th>
+                            <th>Preço Venda</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for produto in produtos %}
+                        <tr>
+                            <td>{{ produto.codigo }}</td>
+                            <td><strong>{{ produto.descricao }}</strong></td>
+                            <td>{{ produto.categoria or '-' }}</td>
+                            <td class="{% if produto.estoque < 10 %}low-stock{% endif %}">
+                                {{ produto.estoque }} un. {% if produto.estoque < 10 %}(Baixo){% endif %}
+                            </td>
+                            <td>R$ {{ "%.2f"|format(produto.preco_custo or 0)|replace('.', ',') }}</td>
+                            <td><strong>R$ {{ "%.2f"|format(produto.preco_venda)|replace('.', ',') }}</strong></td>
+                            <td>
+                                <button class="btn-mini btn-repor" data-codigo="{{ produto.codigo }}" data-descricao="{{ produto.descricao }}" onclick="reporEstoque(this)">+ Repor</button>
+                                {% if cargo == 'gerente' %}
+                                    <button class="btn-mini btn-excluir" data-codigo="{{ produto.codigo }}" data-descricao="{{ produto.descricao }}" onclick="excluirProduto(this)">Excluir</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="resumo-estoque">
+                <strong>RESUMO DE ESTOQUE:</strong>
+                Total de Produtos Cadastrados: <strong>{{ total_produtos }}</strong> |
+                Produtos com Estoque Baixo: <strong class="low-stock">{{ estoque_baixo }}</strong>
+                {% if cargo == 'gerente' %}
+                    | Valor Total em Estoque (Custo): <strong>R$ {{ valor_total_compra }}</strong>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="panel" style="flex: 1;">
+            <h3>Cadastrar Novo Produto</h3>
+
+            <div class="campo-grupo">
+                <label for="novo-codigo">Código de Barras (somente números):</label>
+                <input type="text" id="novo-codigo" maxlength="20" placeholder="Ex: 7891000100103" oninput="apenasNumeros(this)">
+            </div>
+
+            <div class="campo-grupo">
+                <label for="novo-descricao">Descrição do Produto:</label>
+                <input type="text" id="novo-descricao" maxlength="100" placeholder="Ex: CAFÉ PILÃO 500G">
+            </div>
+
+            <div class="campo-grupo">
+                <label for="novo-categoria">Categoria (somente letras):</label>
+                <input type="text" id="novo-categoria" maxlength="40" placeholder="Ex: Mercearia" oninput="apenasLetras(this)">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <div class="campo-grupo" style="flex: 1;">
+                    <label for="novo-estoque">Estoque Inicial:</label>
+                    <input type="text" id="novo-estoque" value="10" maxlength="6" oninput="apenasNumeros(this)">
+                </div>
+                <div class="campo-grupo" style="flex: 1;">
+                    <label for="novo-custo">Preço Custo (R$):</label>
+                    <input type="text" id="novo-custo" maxlength="10" placeholder="0,00" oninput="apenasMoeda(this)">
+                </div>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="novo-venda">Preço de Venda (R$):</label>
+                <input type="text" id="novo-venda" maxlength="10" placeholder="0,00" oninput="apenasMoeda(this)">
+            </div>
+
+            <button class="btn-sucesso" onclick="cadastrarProduto()">Salvar Cadastro</button>
+        </div>
+    </div>
+
+    <div class="status-bar">Operador: {{ usuario_nome }} ({{ cargo|upper }}) | Status: Modo Estoque Ativo</div>
+
+    <script>
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'F7') {
+                e.preventDefault();
+                location.href = '/';
+            }
+        });
+
+        function apenasNumeros(campo) {
+            campo.value = campo.value.replace(/\D/g, '');
+        }
+
+        function apenasLetras(campo) {
+            campo.value = campo.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '');
+        }
+
+        function apenasMoeda(campo) {
+            campo.value = campo.value.replace(/[^0-9,]/g, '');
+            const partes = campo.value.split(',');
+            if (partes.length > 2) {
+                campo.value = partes[0] + ',' + partes.slice(1).join('');
+            }
+        }
+
+        async function cadastrarProduto() {
+            const codigo = document.getElementById('novo-codigo').value.trim();
+            const descricao = document.getElementById('novo-descricao').value.trim().toUpperCase();
+            const categoria = document.getElementById('novo-categoria').value.trim();
+            const estoqueStr = document.getElementById('novo-estoque').value.trim();
+            const custoStr = document.getElementById('novo-custo').value.trim();
+            const vendaStr = document.getElementById('novo-venda').value.trim();
+
+            if (!/^\d{4,20}$/.test(codigo)) {
+                alert('Código inválido! Digite apenas números (entre 4 e 20 dígitos).');
+                document.getElementById('novo-codigo').focus();
+                return;
+            }
+
+            if (descricao.length < 3 || !/[A-ZÀ-Ÿ]/.test(descricao)) {
+                alert('Descrição inválida! Informe o nome real do produto (mínimo 3 caracteres com letras).');
+                document.getElementById('novo-descricao').focus();
+                return;
+            }
+
+            if (categoria !== '' && (categoria.length < 3 || !/^[a-zA-ZÀ-ÿ\s]+$/.test(categoria))) {
+                alert('Categoria inválida! Use apenas letras (mínimo 3 caracteres).');
+                document.getElementById('novo-categoria').focus();
+                return;
+            }
+
+            if (estoqueStr === '' || !/^\d+$/.test(estoqueStr)) {
+                alert('Estoque inválido! Informe um número inteiro maior ou igual a 0.');
+                document.getElementById('novo-estoque').focus();
+                return;
+            }
+            const estoque = parseInt(estoqueStr, 10);
+
+            const custo = custoStr === '' ? 0 : parseFloat(custoStr.replace(',', '.'));
+            const venda = parseFloat(vendaStr.replace(',', '.'));
+
+            if (isNaN(custo) || custo < 0) {
+                alert('Preço de custo inválido! Não são permitidos valores negativos.');
+                document.getElementById('novo-custo').focus();
+                return;
+            }
+
+            if (isNaN(venda) || venda <= 0) {
+                alert('Preço de venda inválido! O valor deve ser maior que R$ 0,00.');
+                document.getElementById('novo-venda').focus();
+                return;
+            }
+
+            if (custo > 0 && venda < custo) {
+                const confirmarPrejuizo = confirm(
+                    `Atenção: O preço de venda (R$ ${venda.toFixed(2).replace('.', ',')}) é menor que o preço de custo (R$ ${custo.toFixed(2).replace('.', ',')}).\nDeseja cadastrar mesmo assim?`
+                );
+                if (!confirmarPrejuizo) return;
+            }
+
+            const resposta = await fetch('/api/cadastrar_produto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo, descricao, categoria, estoque, custo, venda })
+            });
+
+            if (resposta.status === 401) {
+                location.href = '/login';
+                return;
+            }
+
+            const resultado = await resposta.json();
+            if (resposta.ok) {
+                alert(resultado.mensagem);
+                location.reload();
+            } else {
+                alert(resultado.erro || 'Erro ao cadastrar produto.');
+            }
+        }
+
+        async function reporEstoque(botao) {
+            const codigo = botao.getAttribute('data-codigo');
+            const descricao = botao.getAttribute('data-descricao');
+
+            const qtdStr = prompt(`Quantas unidades deseja adicionar ao estoque de:\n${descricao}?`, '10');
+            if (qtdStr === null) return;
+
+            if (!/^\d+$/.test(qtdStr.trim()) || parseInt(qtdStr, 10) <= 0) {
+                alert('Quantidade inválida! Digite apenas um número inteiro maior que zero.');
+                return;
+            }
+
+            const resposta = await fetch('/api/repor_estoque', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo: codigo, quantidade: parseInt(qtdStr, 10) })
+            });
+
+            const res = await resposta.json();
+            if (resposta.ok) {
+                location.reload();
+            } else {
+                alert(res.erro || 'Erro ao repor estoque.');
+            }
+        }
+
+        async function excluirProduto(botao) {
+            const codigo = botao.getAttribute('data-codigo');
+            const descricao = botao.getAttribute('data-descricao');
+
+            if (!confirm(`Tem certeza que deseja excluir o produto:\n${descricao}?`)) return;
+
+            const resposta = await fetch('/api/excluir_produto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo: codigo })
+            });
+
+            const res = await resposta.json();
+            if (resposta.ok) {
+                location.reload();
+            } else {
+                alert(res.erro || 'Erro ao excluir.');
+            }
+        }
+    </script>
+</body>
+</html>

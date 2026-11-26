@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>GR Pdv - Frente de Caixa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .modal-fundo {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .modal-caixa {
+            background: #ffffff;
+            width: 100%;
+            max-width: 560px;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.35);
+        }
+        .modal-topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+            margin-bottom: 16px;
+        }
+        .modal-topo h4 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 1.1rem;
+        }
+        .btn-fechar-modal {
+            background: #e2e8f0;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .lista-busca-wrapper {
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .troco-box {
+            display: none;
+            background-color: #fef9c3;
+            border: 1px solid #fde047;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .troco-valor {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #15803d;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">GR <span>Pdv</span></div>
+        <div class="atalhos">
+            <div class="atalhos-titulo">Atalhos do Teclado</div>
+            <table>
+                <tr>
+                    <td><span class="tecla">Enter</span> Adicionar</td>
+                    <td><span class="tecla">F2</span> Buscar Nome</td>
+                    <td><span class="tecla">F4</span> Finalizar</td>
+                    <td><span class="tecla">F5</span> Remover Último</td>
+                    <td><span class="tecla">F6</span> Cancelar Venda</td>
+                </tr>
+            </table>
+        </div>
+    </header>
+
+    <div class="nav-bar">
+        <button class="active">Frente de Caixa</button>
+        
+        {% if cargo in ['fiscal', 'gerente'] %}
+            <button onclick="location.href='/estoque'">Controle de Estoque</button>
+        {% endif %}
+
+        {% if cargo == 'gerente' %}
+            <button onclick="location.href='/gerencia'">Relatórios & Equipe</button>
+        {% endif %}
+
+        <button onclick="location.href='/logout'" style="margin-left: auto; background-color: #dc2626;">Sair / Trocar Operador</button>
+    </div>
+
+    <div class="banner-wrapper">
+        <div class="banner-label">Descrição do Produto</div>
+        <div class="banner-desc" id="desc-banner">CAIXA LIVRE - PASSE O CÓDIGO</div>
+    </div>
+
+    <div class="main-container">
+        <div class="panel" style="flex: 2;">
+            <h3>Cupom Fiscal</h3>
+            <div class="tabela-wrapper">
+                <table class="tabela-dados" id="tabela-cupom">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Quant.</th>
+                            <th>Valor Unit.</th>
+                            <th>Preço Total</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel" style="flex: 1;">
+            <h3>Informações do Item</h3>
+
+            <div class="campo-grupo">
+                <label for="codigo-input">Código do Produto (ou aperte F2):</label>
+                <div style="display: flex; gap: 6px;">
+                    <input type="text" id="codigo-input" maxlength="20" placeholder="Ex: 2025400002452" oninput="this.value = this.value.replace(/\D/g, '')" autofocus style="flex: 1;">
+                    <button type="button" onclick="abrirBuscaProduto()" style="padding: 0 12px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">F2</button>
+                </div>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="quant-input">Quantidade (inteiro):</label>
+                <input type="text" id="quant-input" value="1" maxlength="5" oninput="this.value = this.value.replace(/\D/g, '')">
+            </div>
+
+            <button class="btn-primario" id="btn-adicionar" onclick="adicionarProduto()">+ Adicionar Item (Enter)</button>
+
+            <div class="subtotal-box">
+                Último Item (<span id="unit-info" style="display:inline; font-size:0.9rem;">R$ 0,00</span>)
+                <span id="total-item">R$ 0,00</span>
+            </div>
+
+            <div class="total-banner">
+                Total a Pagar: <span id="total-pagar">R$ 0,00</span>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="forma-pagamento">Forma de Pagamento:</label>
+                <select id="forma-pagamento" onchange="alternarCampoDinheiro()">
+                    <option value="Pix">Pix</option>
+                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                    <option value="Cartão de Débito">Cartão de Débito</option>
+                    <option value="Dinheiro">Dinheiro</option>
+                </select>
+            </div>
+
+            <div class="troco-box" id="box-dinheiro">
+                <label for="valor-recebido" style="font-size: 0.85rem; font-weight: bold; color: #334155;">Valor Recebido em Dinheiro (R$):</label>
+                <input type="number" id="valor-recebido" step="0.01" min="0" placeholder="0,00" oninput="calcularTroco()" style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; font-weight: bold;">
+                <div class="troco-valor" id="texto-troco">Troco: R$ 0,00</div>
+            </div>
+
+            <button class="btn-sucesso" id="btn-finalizar" onclick="finalizarVenda()">Finalizar Venda (F4)</button>
+        </div>
+    </div>
+
+    <div class="status-bar" id="status-bar">Operador: {{ usuario_nome }} ({{ cargo|upper }}) | Status: Caixa Livre</div>
+
+    <!-- MODAL F2: BUSCAR PRODUTO POR NOME -->
+    <div class="modal-fundo" id="modal-busca">
+        <div class="modal-caixa">
+            <div class="modal-topo">
+                <h4>Pesquisar Produto por Nome (F2)</h4>
+                <button class="btn-fechar-modal" onclick="fecharModais()">ESC</button>
+            </div>
+            <div class="campo-grupo">
+                <input type="text" id="input-busca-nome" maxlength="50" placeholder="Digite o nome ou código do produto..." oninput="pesquisarProdutos()">
+            </div>
+            <div class="lista-busca-wrapper">
+                <table class="tabela-dados" id="tabela-resultados-busca">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Estoque</th>
+                            <th>Preço</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SUPERVISOR: AUTORIZAR F5 / F6 PARA FUNCIONÁRIO -->
+    <div class="modal-fundo" id="modal-supervisor">
+        <div class="modal-caixa" style="max-width: 400px;">
+            <div class="modal-topo">
+                <h4>Autorização de Fiscal / Gerente</h4>
+                <button class="btn-fechar-modal" onclick="fecharModais()">ESC</button>
+            </div>
+            <p id="texto-motivo-supervisor" style="font-size: 0.9rem; color: #475569; margin-bottom: 14px;"></p>
+            <div class="campo-grupo">
+                <label for="sup-usuario">Usuário do Fiscal ou Gerente:</label>
+                <input type="text" id="sup-usuario" placeholder="Ex: fiscal ou gerente">
+            </div>
+            <div class="campo-grupo">
+                <label for="sup-senha">Senha:</label>
+                <input type="password" id="sup-senha" placeholder="Senha do supervisor">
+            </div>
+            <button class="btn-primario" onclick="confirmarAutorizacaoSupervisor()">Autorizar Operação</button>
+        </div>
+    </div>
+
+    <script>
+        let carrinho = [];
+        let totalGeral = 0;
+        let acaoPendenteSupervisor = null;
+        let processandoRequisicao = false;
+
+        const cargoAtual = "{{ cargo }}";
+        const operadorTexto = "Operador: {{ usuario_nome }} ({{ cargo|upper }})";
+
+        const codigoInput = document.getElementById('codigo-input');
+        const quantInput = document.getElementById('quant-input');
+        const tabelaBody = document.querySelector('#tabela-cupom tbody');
+        const descBanner = document.getElementById('desc-banner');
+        const unitInfo = document.getElementById('unit-info');
+        const totalItemSpan = document.getElementById('total-item');
+        const totalPagarSpan = document.getElementById('total-pagar');
+        const statusBar = document.getElementById('status-bar');
+
+        function formatarMoeda(valor) {
+            return 'R$ ' + valor.toFixed(2).replace('.', ',');
+        }
+
+        function modalEstaAberto() {
+            return document.getElementById('modal-busca').style.display === 'flex' ||
+                   document.getElementById('modal-supervisor').style.display === 'flex';
+        }
+
+        function fecharModais() {
+            document.getElementById('modal-busca').style.display = 'none';
+            document.getElementById('modal-supervisor').style.display = 'none';
+            acaoPendenteSupervisor = null;
+            codigoInput.focus();
+        }
+
+        [codigoInput, quantInput].forEach(input => {
+            input.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    adicionarProduto();
+                }
+            });
+        });
+
+        document.getElementById('sup-senha').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmarAutorizacaoSupervisor();
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modalEstaAberto()) {
+                e.preventDefault();
+                fecharModais();
+                return;
+            }
+
+            if (modalEstaAberto()) return;
+
+            if (e.key === 'F2') {
+                e.preventDefault();
+                abrirBuscaProduto();
+            } else if (e.key === 'F4') {
+                e.preventDefault();
+                finalizarVenda();
+            } else if (e.key === 'F5') {
+                e.preventDefault();
+                if (carrinho.length === 0) return;
+                solicitarOuExecutarCancelamento('F5');
+            } else if (e.key === 'F6') {
+                e.preventDefault();
+                if (carrinho.length === 0) return;
+                solicitarOuExecutarCancelamento('F6');
+            }
+        });
+
+        // --- BUSCA POR NOME (F2) ---
+        async function abrirBuscaProduto() {
+            document.getElementById('modal-busca').style.display = 'flex';
+            const inputBusca = document.getElementById('input-busca-nome');
+            inputBusca.value = '';
+            inputBusca.focus();
+            await pesquisarProdutos();
+        }
+
+        async function pesquisarProdutos() {
+            const termo = document.getElementById('input-busca-nome').value;
+            const resp = await fetch('/api/pesquisar_produtos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ termo: termo })
+            });
+
+            if (resp.status === 401) {
+                location.href = '/login';
+                return;
+            }
+
+            const lista = await resp.json();
+            const tbody = document.querySelector('#tabela-resultados-busca tbody');
+            tbody.innerHTML = '';
+
+            lista.forEach(p => {
+                const tr = document.createElement('tr');
+
+                const tdCod = document.createElement('td');
+                tdCod.textContent = p.codigo;
+
+                const tdDesc = document.createElement('td');
+                const strong = document.createElement('strong');
+                strong.textContent = p.descricao;
+                tdDesc.appendChild(strong);
+
+                const tdEst = document.createElement('td');
+                tdEst.textContent = `${p.estoque} un.`;
+
+                const tdPreco = document.createElement('td');
+                tdPreco.textContent = formatarMoeda(p.preco_venda);
+
+                const tdAcao = document.createElement('td');
+                const btn = document.createElement('button');
+                btn.className = 'btn-mini btn-repor';
+                btn.textContent = p.estoque > 0 ? 'Selecionar' : 'Sem Estoque';
+                btn.disabled = p.estoque <= 0;
+                if (p.estoque <= 0) btn.style.backgroundColor = '#94a3b8';
+                btn.onclick = () => selecionarProdutoBusca(p.codigo, p.descricao);
+                tdAcao.appendChild(btn);
+
+                tr.append(tdCod, tdDesc, tdEst, tdPreco, tdAcao);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function selecionarProdutoBusca(codigo, descricao) {
+            fecharModais();
+            codigoInput.value = codigo;
+            descBanner.textContent = descricao;
+            quantInput.value = '1';
+            quantInput.focus();
+            quantInput.select();
+        }
+
+        // --- SUPERVISÃO PARA F5 / F6 ---
+        function solicitarOuExecutarCancelamento(tipo) {
+            if (cargoAtual === 'fiscal' || cargoAtual === 'gerente') {
+                executarAcaoCancelamento(tipo);
+            } else {
+                acaoPendenteSupervisor = tipo;
+                document.getElementById('texto-motivo-supervisor').textContent =
+                    tipo === 'F5'
+                        ? 'Para remover o último item do cupom, informe a credencial de um Fiscal ou Gerente:'
+                        : 'Para cancelar a venda inteira, informe a credencial de um Fiscal ou Gerente:';
+                document.getElementById('sup-usuario').value = '';
+                document.getElementById('sup-senha').value = '';
+                document.getElementById('modal-supervisor').style.display = 'flex';
+                document.getElementById('sup-usuario').focus();
+            }
+        }
+
+        async function confirmarAutorizacaoSupervisor() {
+            const usuario = document.getElementById('sup-usuario').value;
+            const senha = document.getElementById('sup-senha').value;
+            const motivo = acaoPendenteSupervisor === 'F5' ? 'Remoção de item (F5)' : 'Cancelamento de venda (F6)';
+
+            const resp = await fetch('/api/autorizar_supervisor', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario, senha, motivo })
+            });
+
+            const dados = await resp.json();
+            if (resp.ok && dados.autorizado) {
+                const acao = acaoPendenteSupervisor;
+                fecharModais();
+                executarAcaoCancelamento(acao);
+            } else {
+                alert(dados.erro || 'Autorização negada!');
+            }
+        }
+
+        function executarAcaoCancelamento(tipo) {
+            if (tipo === 'F5') {
+                carrinho.pop();
+                atualizarCupom();
+                if (carrinho.length === 0) {
+                    limparTela();
+                }
+            } else if (tipo === 'F6') {
+                if (cargoAtual === 'funcionario' || confirm('Deseja cancelar a venda atual?')) {
+                    limparTela();
+                }
+            }
+        }
+
+        // --- CÁLCULO DE TROCO ---
+        function alternarCampoDinheiro() {
+            const forma = document.getElementById('forma-pagamento').value;
+            const box = document.getElementById('box-dinheiro');
+            if (forma === 'Dinheiro') {
+                box.style.display = 'block';
+                calcularTroco();
+            } else {
+                box.style.display = 'none';
+                document.getElementById('valor-recebido').value = '';
+            }
+        }
+
+        function calcularTroco() {
+            const recebido = parseFloat(document.getElementById('valor-recebido').value) || 0;
+            const textoTroco = document.getElementById('texto-troco');
+            if (recebido <= 0) {
+                textoTroco.style.color = '#334155';
+                textoTroco.textContent = 'Troco: R$ 0,00';
+                return;
+            }
+            const diferenca = recebido - totalGeral;
+            if (diferenca < 0) {
+                textoTroco.style.color = '#dc2626';
+                textoTroco.textContent = `Falta: ${formatarMoeda(Math.abs(diferenca))}`;
+            } else {
+                textoTroco.style.color = '#15803d';
+                textoTroco.textContent = `Troco: ${formatarMoeda(diferenca)}`;
+            }
+        }
+
+        // --- OPERAÇÕES DO CAIXA ---
+        async function adicionarProduto() {
+            if (processandoRequisicao) return;
+
+            const codigo = codigoInput.value.trim();
+            const quant = parseInt(quantInput.value, 10);
+
+            if (!codigo) {
+                codigoInput.focus();
+                return;
+            }
+
+            if (isNaN(quant) || quant <= 0) {
+                alert('Quantidade inválida! Informe um número inteiro maior que zero.');
+                quantInput.value = '1';
+                quantInput.focus();
+                quantInput.select();
+                return;
+            }
+
+            processandoRequisicao = true;
+            try {
+                const resposta = await fetch('/api/buscar_produto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo: codigo })
+                });
+
+                if (resposta.status === 401) {
+                    location.href = '/login';
+                    return;
+                }
+
+                const produto = await resposta.json();
+                if (!resposta.ok) {
+                    alert(produto.erro || 'Produto não encontrado! Aperte F2 para buscar pelo nome.');
+                    codigoInput.select();
+                    return;
+                }
+
+                const precoUnit = parseFloat(produto.preco_venda);
+                const itemExistente = carrinho.find(i => i.codigo === produto.codigo);
+                const qtdAtualNoCarrinho = itemExistente ? itemExistente.quant : 0;
+
+                if ((quant + qtdAtualNoCarrinho) > produto.estoque) {
+                    alert(`Estoque insuficiente! Disponível: ${produto.estoque} un. (Você já tem ${qtdAtualNoCarrinho} un. no cupom).`);
+                    return;
+                }
+
+                const subtotalAdicionado = precoUnit * quant;
+
+                if (itemExistente) {
+                    itemExistente.quant += quant;
+                    itemExistente.subtotal = itemExistente.quant * precoUnit;
+                } else {
+                    carrinho.push({
+                        codigo: produto.codigo,
+                        descricao: produto.descricao,
+                        quant: quant,
+                        preco_unit: precoUnit,
+                        subtotal: subtotalAdicionado
+                    });
+                }
+
+                descBanner.textContent = produto.descricao;
+                unitInfo.textContent = formatarMoeda(precoUnit);
+                totalItemSpan.textContent = formatarMoeda(subtotalAdicionado);
+                statusBar.textContent = `${operadorTexto} | Status: Venda Aberta`;
+
+                atualizarCupom();
+
+                codigoInput.value = '';
+                quantInput.value = '1';
+                codigoInput.focus();
+            } finally {
+                processandoRequisicao = false;
+            }
+        }
+
+        function atualizarCupom() {
+            tabelaBody.innerHTML = '';
+            totalGeral = 0;
+
+            carrinho.forEach(item => {
+                totalGeral += item.subtotal;
+                const tr = document.createElement('tr');
+
+                const tdCod = document.createElement('td');
+                tdCod.textContent = item.codigo;
+
+                const tdDesc = document.createElement('td');
+                const strongDesc = document.createElement('strong');
+                strongDesc.textContent = item.descricao;
+                tdDesc.appendChild(strongDesc);
+
+                const tdQuant = document.createElement('td');
+                tdQuant.textContent = item.quant;
+
+                const tdUnit = document.createElement('td');
+                tdUnit.textContent = formatarMoeda(item.preco_unit);
+
+                const tdSub = document.createElement('td');
+                const strongSub = document.createElement('strong');
+                strongSub.textContent = formatarMoeda(item.subtotal);
+                tdSub.appendChild(strongSub);
+
+                tr.append(tdCod, tdDesc, tdQuant, tdUnit, tdSub);
+                tabelaBody.appendChild(tr);
+            });
+
+            totalPagarSpan.textContent = formatarMoeda(totalGeral);
+            calcularTroco();
+        }
+
+        function limparTela() {
+            carrinho = [];
+            atualizarCupom();
+            descBanner.textContent = 'CAIXA LIVRE - PASSE O CÓDIGO';
+            unitInfo.textContent = 'R$ 0,00';
+            totalItemSpan.textContent = 'R$ 0,00';
+            statusBar.textContent = `${operadorTexto} | Status: Caixa Livre`;
+            document.getElementById('valor-recebido').value = '';
+            calcularTroco();
+            codigoInput.value = '';
+            quantInput.value = '1';
+            codigoInput.focus();
+        }
+
+        async function finalizarVenda() {
+            if (processandoRequisicao) return;
+
+            if (carrinho.length === 0) {
+                alert('Adicione pelo menos um item antes de finalizar a venda!');
+                codigoInput.focus();
+                return;
+            }
+
+            const formaPagamento = document.getElementById('forma-pagamento').value;
+            let infoTroco = '';
+
+            if (formaPagamento === 'Dinheiro') {
+                const recebidoStr = document.getElementById('valor-recebido').value.trim();
+                const recebido = parseFloat(recebidoStr);
+
+                if (recebidoStr === '' || isNaN(recebido) || recebido < totalGeral) {
+                    alert(`Informe o valor recebido em dinheiro (mínimo ${formatarMoeda(totalGeral)})!`);
+                    document.getElementById('valor-recebido').focus();
+                    return;
+                }
+                infoTroco = `\nTroco a devolver: ${formatarMoeda(recebido - totalGeral)}`;
+            }
+
+            processandoRequisicao = true;
+            const btnFinalizar = document.getElementById('btn-finalizar');
+            btnFinalizar.disabled = true;
+
+            try {
+                const resposta = await fetch('/api/finalizar_venda', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        forma_pagamento: formaPagamento,
+                        itens_lista: carrinho.map(i => ({ codigo: i.codigo, quant: i.quant }))
+                    })
+                });
+
+                if (resposta.status === 401) {
+                    location.href = '/login';
+                    return;
+                }
+
+                const res = await resposta.json();
+                if (resposta.ok) {
+                    alert(`Venda de ${formatarMoeda(res.total_confirmado)} (${formaPagamento}) finalizada!${infoTroco}`);
+                    limparTela();
+                } else {
+                    alert(res.erro || 'Erro ao finalizar a venda.');
+                }
+            } finally {
+                processandoRequisicao = false;
+                btnFinalizar.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

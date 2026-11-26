@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>GR Pdv - Relatórios e Equipe</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .cards-financeiros {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px 0 16px;
+        }
+        .card-kpi {
+            flex: 1;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+        .card-kpi span {
+            display: block;
+            font-size: 0.78rem;
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .card-kpi strong {
+            display: block;
+            font-size: 1.25rem;
+            color: #0f172a;
+            margin-top: 4px;
+        }
+        .card-kpi.destaque {
+            background: #0f172a;
+            border-color: #0f172a;
+        }
+        .card-kpi.destaque span { color: #94a3b8; }
+        .card-kpi.destaque strong { color: #38bdf8; }
+        .badge-cargo {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">GR <span>Pdv</span></div>
+        <div class="atalhos">
+            <div class="atalhos-titulo">Painel Exclusivo do Gerente</div>
+            <table>
+                <tr>
+                    <td><span class="tecla">F7</span> Voltar ao Caixa</td>
+                    <td><span class="tecla">Vendas</span> {{ qtd_vendas }} registro(s)</td>
+                </tr>
+            </table>
+        </div>
+    </header>
+
+    <div class="nav-bar">
+        <button onclick="location.href='/'">Frente de Caixa</button>
+        <button onclick="location.href='/estoque'">Controle de Estoque</button>
+        <button class="active">Relatórios & Equipe</button>
+        <button onclick="location.href='/logout'" style="margin-left: auto; background-color: #dc2626;">Sair / Trocar Operador</button>
+    </div>
+
+    <div class="cards-financeiros">
+        <div class="card-kpi destaque">
+            <span>Faturamento Total</span>
+            <strong>R$ {{ faturamento_total }}</strong>
+        </div>
+        <div class="card-kpi">
+            <span>Pix</span>
+            <strong>R$ {{ total_pix }}</strong>
+        </div>
+        <div class="card-kpi">
+            <span>Cartão de Crédito</span>
+            <strong>R$ {{ total_credito }}</strong>
+        </div>
+        <div class="card-kpi">
+            <span>Cartão de Débito</span>
+            <strong>R$ {{ total_debito }}</strong>
+        </div>
+        <div class="card-kpi">
+            <span>Dinheiro</span>
+            <strong>R$ {{ total_dinheiro }}</strong>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="panel" style="flex: 2; gap: 14px;">
+            <div>
+                <h3>Histórico de Vendas Realizadas</h3>
+                <div class="tabela-wrapper" style="max-height: 240px;">
+                    <table class="tabela-dados">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Data / Hora</th>
+                                <th>Operador</th>
+                                <th>Itens Vendidos</th>
+                                <th>Pagamento</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for venda in vendas %}
+                            <tr>
+                                <td>{{ venda.id }}</td>
+                                <td>{{ venda.data_venda.strftime('%d/%m/%Y %H:%M') if venda.data_venda else '-' }}</td>
+                                <td><strong>{{ venda.operador_nome }}</strong></td>
+                                <td>{{ venda.resumo_itens }}</td>
+                                <td>{{ venda.forma_pagamento }}</td>
+                                <td><strong>R$ {{ "%.2f"|format(venda.valor_total)|replace('.', ',') }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <h3>Auditoria e Logs de Segurança</h3>
+                <div class="tabela-wrapper" style="max-height: 180px;">
+                    <table class="tabela-dados">
+                        <thead>
+                            <tr>
+                                <th>Data / Hora</th>
+                                <th>Responsável</th>
+                                <th>Evento</th>
+                                <th>Detalhes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.data_hora }}</td>
+                                <td><strong>{{ log.usuario_nome }}</strong></td>
+                                <td><span class="badge-cargo">{{ log.acao }}</span></td>
+                                <td>{{ log.detalhes }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" style="flex: 1;">
+            <h3>Gestão de Usuários</h3>
+
+            <div class="campo-grupo">
+                <label for="user-nome">Nome Completo (somente letras):</label>
+                <input type="text" id="user-nome" maxlength="60" placeholder="Ex: Maria Souza" oninput="this.value = this.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '')">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <div class="campo-grupo" style="flex: 1;">
+                    <label for="user-login">Usuário (Login):</label>
+                    <input type="text" id="user-login" maxlength="30" placeholder="Ex: maria" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9._]/g, '')">
+                </div>
+                <div class="campo-grupo" style="flex: 1;">
+                    <label for="user-senha">Senha (mín. 4):</label>
+                    <input type="password" id="user-senha" maxlength="50" placeholder="Ex: 1234">
+                </div>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="user-cargo">Cargo / Nível de Acesso:</label>
+                <select id="user-cargo">
+                    <option value="funcionario">Funcionário (Apenas Caixa)</option>
+                    <option value="fiscal">Fiscal (Caixa + Estoque + Autorizações)</option>
+                    <option value="gerente">Gerente (Acesso Total)</option>
+                </select>
+            </div>
+
+            <button class="btn-sucesso" onclick="cadastrarUsuario()" style="margin-bottom: 16px;">+ Criar Usuário</button>
+
+            <div class="tabela-wrapper" style="max-height: 210px;">
+                <table class="tabela-dados">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Login</th>
+                            <th>Cargo</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in usuarios %}
+                        <tr>
+                            <td><strong>{{ u.nome }}</strong></td>
+                            <td>{{ u.usuario }}</td>
+                            <td><span class="badge-cargo">{{ u.cargo }}</span></td>
+                            <td>
+                                {% if u.id != usuario_id_atual %}
+                                    <button class="btn-mini btn-excluir" data-id="{{ u.id }}" data-nome="{{ u.nome }}" onclick="excluirUsuario(this)">X</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">Operador: {{ usuario_nome }} ({{ cargo|upper }}) | Status: Painel Gerencial</div>
+
+    <script>
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'F7') {
+                e.preventDefault();
+                location.href = '/';
+            }
+        });
+
+        async function cadastrarUsuario() {
+            const nome = document.getElementById('user-nome').value.trim();
+            const usuario = document.getElementById('user-login').value.trim();
+            const senha = document.getElementById('user-senha').value.trim();
+            const cargo = document.getElementById('user-cargo').value;
+
+            if (!/^[a-zA-ZÀ-ÿ\s]{3,60}$/.test(nome)) {
+                alert('Nome inválido! Informe apenas letras (mínimo 3 caracteres).');
+                document.getElementById('user-nome').focus();
+                return;
+            }
+
+            if (!/^[a-z0-9._]{3,30}$/.test(usuario)) {
+                alert('Login inválido! Use de 3 a 30 letras minúsculas, números, ponto ou sublinhado.');
+                document.getElementById('user-login').focus();
+                return;
+            }
+
+            if (senha.length < 4) {
+                alert('Senha muito curta! Informe pelo menos 4 caracteres.');
+                document.getElementById('user-senha').focus();
+                return;
+            }
+
+            const resp = await fetch('/api/cadastrar_usuario', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, usuario, senha, cargo })
+            });
+
+            const res = await resp.json();
+            if (resp.ok) {
+                alert(res.mensagem);
+                location.reload();
+            } else {
+                alert(res.erro || 'Erro ao criar usuário.');
+            }
+        }
+
+        async function excluirUsuario(botao) {
+    const id = botao.getAttribute('data-id');
+    const nome = botao.getAttribute('data-nome');
+
+    if (!confirm(`Deseja remover o acesso de ${nome}?`)) return;
+
+    const resp = await fetch('/api/excluir_usuario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id })
+    });
+
+    const res = await resp.json();
+    if (resp.ok) {
+        location.reload();
+    } else {
+        alert(res.erro || 'Erro ao excluir usuário.');
+    }
+}
+        
+    </script>
+</body>
+</html>
